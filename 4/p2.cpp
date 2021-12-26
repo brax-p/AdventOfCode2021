@@ -3,28 +3,29 @@
 namespace {
     class Board{
         public:
-            Board();
+            Board(int boardNumber);
             std::vector<int> tiles;
             std::vector<bool> tile_state;
+            int boardNumber;
             void printBoard();
             bool isBoardWinner();
             bool hasCalledNumber(int calledNumber);
             int getAnswer(int calledNumber);
             void markOff(int calledNumber);
     };
-    Board::Board(){
+    Board::Board(int boardNumber){
         for(int i = 0; i < 25; i++){
             tile_state.push_back(false);
         }
+        this->boardNumber = boardNumber;
     }
 
     void Board::markOff(int calledNumber){
         int index = 0;
         for(int i = 0; i < tiles.size(); i++){
             if(tiles[i] == calledNumber)
-                index = i;
+                tile_state[i] = true;
         }
-        tile_state[index] = true;
     }
 
     bool Board::hasCalledNumber(int calledNumber){
@@ -98,7 +99,7 @@ std::vector<int> setInstructions(std::string line){
 int main()
 {
     std::ifstream infile;
-    infile.open("input.txt");
+    infile.open("test.txt");
     int lineCount = 0;
     std::string line;
     std::vector<int> instructions = {};
@@ -123,7 +124,7 @@ int main()
         infile.close();
     }
     for(int i = 0; i < boards.size(); i+=5){
-        Board board;
+        Board board((i/5) + 1);
         std::vector<int> tempTiles = {};
         for(int k = 0; k < 5; k++){
             std::vector<int> currentTemp = boards[i+k];
@@ -134,13 +135,37 @@ int main()
         board.tiles = tempTiles;
         finalBoards.push_back(board);
     }
+    
     //Game loop
-
+    std::ofstream outfile;
+    outfile.open("output.txt");
     //For each instruction, check each board and mark off the corresponding index in tile_state that the calledNumber occurs in tile, if any
     for(int i = 0; i < instructions.size(); i++){
         //Get the "called" number
+        outfile << "Step number " << i+1 << "\n";
+        for(auto iter: finalBoards){
+            outfile << "Board #: " << iter.boardNumber << "\n" << instructions[i] << "\n";
+            for(int temp = 0; temp < iter.tiles.size(); temp++){
+                if(temp%5==0)
+                    outfile << "\n";
+                outfile << iter.tiles[temp] << " ";
+            }
+            outfile << "\n";
+        }
+        outfile << "\n";
         int calledNumber = instructions[i];
-
+        if(finalBoards.size() == 1){
+            if(finalBoards[0].isBoardWinner()){
+                std::cout << "This is board number: " << finalBoards[0].boardNumber << "\n";
+                std::cout << finalBoards[0].getAnswer(calledNumber) << "\n";
+                for(int temp = 0; temp < finalBoards[0].tile_state.size(); temp++){
+                if(temp%5==0)
+                    outfile << "\n";
+                outfile << finalBoards[0].tiles[temp] << " ";
+            }
+                return 0;
+            }
+        }
         //for each board
         for(int j = 0; j < finalBoards.size(); j++){
            //check to see if current board has the called number.
@@ -149,12 +174,19 @@ int main()
                finalBoards[j].markOff(calledNumber);
            }
            //check if current board has won off the called number, if so, get answer
-           if(finalBoards[j].isBoardWinner()){
-               int answer = finalBoards[j].getAnswer(calledNumber);
-               std::cout << answer << " is the answer\n";
-               return 0;
+           if(finalBoards[j].isBoardWinner() && finalBoards.size() != 1){
+               finalBoards.erase(finalBoards.begin()+j);
            }
         }
     }
+    outfile.close();
+    
+    /*for(auto k: finalBoards){
+        for(int i = 0; i < k.tiles.size(); i++){
+            if(i%5==0)
+                std::cout << "\n";
+            std::cout << k.tiles[i] << " ";
+        }
+    }*/
     return 0;
 }
